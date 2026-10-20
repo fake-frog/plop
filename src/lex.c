@@ -29,18 +29,17 @@ void print_token(Token t, char *buf) {
   printf("%.*s\n", t.len, buf + t.offset);
 }
 
-
 static const char *KEYWORDS[] = {"def", "for", "while"};
 static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^'};
 static const char SEPORATOR[] = {'(', ')', '[', ']', ','};
 
 // returns true if it found a know symbol
-static bool check_for_keyword(char *buf, i32 offset, i32 len) {
+static bool is_keyword(char *buf, i32 offset, i32 len) {
   //TODO ... 
   return false;
 }
 
-static bool check_for_operator(char c) {
+static bool is_operator(char c) {
   size_t op_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
   for (size_t i = 0; i < op_len; i++) {
     if (c == OPERATORS[i]) return true;
@@ -49,7 +48,7 @@ static bool check_for_operator(char c) {
 }
 
 
-static bool check_for_seporator(char c) {
+static bool is_seporator(char c) {
   size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
   for (size_t i = 0; i < sep_len; i++) {
     if (c == SEPORATOR[i]) return true;
@@ -76,12 +75,12 @@ FileTokens get_tokens(FileBuffer fb) {
     token_len++; // we always have a token length of at least 1
                  
     // look for an operator or seporator
-    if (check_for_operator(*cp)) {
+    if (is_operator(*cp)) {
       append_token(tokens, &count, &token_offset, &token_len, OPT);
       GOTO_NEXT_CHAR(cp);
     }
 
-    if (check_for_seporator(*cp)) {
+    if (is_seporator(*cp)) {
       append_token(tokens, &count, &token_offset, &token_len, SEP);
       GOTO_NEXT_CHAR(cp);
     }
@@ -94,7 +93,7 @@ FileTokens get_tokens(FileBuffer fb) {
       } 
       token_len--; //( ^ will skip next loop)
 
-      if (check_for_keyword(fb.buf, token_offset, token_len)) {
+      if (is_keyword(fb.buf, token_offset, token_len)) {
         append_token(tokens, &count, &token_offset, &token_len, KEY);
         GOTO_NEXT_CHAR(cp);
       }
