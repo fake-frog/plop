@@ -29,17 +29,82 @@ void print_token(Token t, char *buf) {
   printf("%.*s\n", t.len, buf + t.offset);
 }
 
+
+static const char *KEYWORDS[] = {"def", "for", "while"};
+static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^'};
+static const char SEPORATOR[] = {'(', ')', '[', ']', ','};
+
+// returns true if it found a know symbol
+static bool check_for_keyword(char *buf, i32 offset, i32 len) {
+  //TODO ... 
+  return false;
+}
+
+static bool check_for_operator(char c) {
+  size_t op_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
+  for (size_t i = 0; i < op_len; i++) {
+    if (c == OPERATORS[i]) return true;
+  }
+  return false;
+}
+
+
+static bool check_for_seporator(char c) {
+  size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
+  for (size_t i = 0; i < sep_len; i++) {
+    if (c == SEPORATOR[i]) return true;
+  }
+  return false;
+}
+
+// append and update the offset and len
+static void append_token(Token *tokens, size_t *count, i32 *offset, i32 *len, TokenKind kind) {
+  tokens[(*count)++] = (Token){*offset, *len, kind};
+  *offset += *len;
+  *len = 0;
+}
+
+#define GOTO_NEXT_CHAR(cp) (cp)++; continue;
 FileTokens get_tokens(FileBuffer fb) {
   Token *tokens = (Token *)malloc(sizeof(Token) * fb.len);
 
   char *cp = fb.buf;
-  i32 token_len;
+  i32 token_len = 0;
+  i32 token_offset = 0;
+  size_t count = 0;
   while (*cp) {
-    Token t = {0};
-    if (isspace(*cp)) {
-      if(token_len == 0) continue;
+    token_len++; // we always have a token length of at least 1
+                 
+    // look for an operator or seporator
+    if (check_for_operator(*cp)) {
+      append_token(tokens, &count, &token_offset, &token_len, OPT);
+      GOTO_NEXT_CHAR(cp);
     }
-    cp++;
+
+    if (check_for_seporator(*cp)) {
+      append_token(tokens, &count, &token_offset, &token_len, SEP);
+      GOTO_NEXT_CHAR(cp);
+    }
+
+    if (isspace(*cp)) {
+      //skip whitespace
+      if (token_len == 1) { 
+        token_offset++;
+        GOTO_NEXT_CHAR(cp); 
+      } 
+      token_len--; //( ^ will skip next loop)
+
+      if (check_for_keyword(fb.buf, token_offset, token_len)) {
+        append_token(tokens, &count, &token_offset, &token_len, KEY);
+        GOTO_NEXT_CHAR(cp);
+      }
+      
+      append_token(tokens, &count, &token_offset, &token_len, LIT);
+      GOTO_NEXT_CHAR(cp);
+    }
+    
+    GOTO_NEXT_CHAR(cp);
   }
-  return (FileTokens){tokens, fb};
+  // TODO: flush last token
+  return (FileTokens){tokens, count, fb};
 }

@@ -10,6 +10,8 @@ typedef enum {
   OPT,
   LIT,
   SYM,
+  KEY,
+  NIL,
 } TokenKind;
 
 typedef struct {
@@ -25,6 +27,7 @@ typedef struct {
 
 typedef struct {
   Token *tokens;
+  size_t token_count;
   const FileBuffer file_buf;
 } FileTokens;
 

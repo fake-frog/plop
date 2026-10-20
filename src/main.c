@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "lex.c"
+#include "lex.h"
 
 /*
 void build_token(Lexer *lex, char c) {
@@ -25,14 +25,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   
-
   FileBuffer file_buffer = read_file(file_path);
+  FileTokens ft = get_tokens(file_buffer);
 
-  Token t = {2, 5, SYM};
-
-  print_token(t, file_buffer.buf);
-  printf("%s", file_buffer.buf);
-  
+  printf("Token Length: %d\n", (int)ft.token_count);
+  for (size_t i = 0; i < ft.token_count; i++) {
+    print_token(ft.tokens[i], ft.file_buf.buf);
+  }
   /*
   FILE *file = fopen(file_path, "r");
   if (!file) {
