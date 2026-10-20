@@ -37,7 +37,7 @@ static const size_t key_len = sizeof(KEYWORDS)  / sizeof(KEYWORDS[0]);
 static const size_t opt_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
 static const size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
 // returns true if it found a know symbol
-static bool is_keyword(char *buf, i32 offset, i32 len) {
+static bool is_keyword(char *buf, u32 offset, u32 len) {
   //TODO ... 
   return false;
 }
@@ -57,7 +57,7 @@ static bool is_seporator(char c) {
 }
 
 // append and update the offset and len
-static void append_token(Token *tokens, size_t *count, i32 *offset, i32 *len, TokenKind kind) {
+static void append_token(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
   tokens[(*count)++] = (Token){*offset, *len, kind};
   *offset += *len;
   *len = 0;
@@ -69,8 +69,8 @@ FileTokens get_tokens(FileBuffer fb) {
   Token *tokens = (Token *)malloc(sizeof(Token) * fb.len);
 
   char *cp = fb.buf;
-  i32 token_len = 0;
-  i32 token_offset = 0;
+  u32 token_len = 0;
+  u32 token_offset = 0;
   size_t count = 0;
   while (*cp) {
     token_len++; // we always have a token length of at least 1

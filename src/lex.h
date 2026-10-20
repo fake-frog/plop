@@ -15,8 +15,8 @@ typedef enum {
 } TokenKind;
 
 typedef struct {
-  i32 offset;
-  i32 len;
+  u32 offset;
+  u32 len;
   TokenKind kind;
 } Token;
 
