@@ -33,6 +33,9 @@ static const char *KEYWORDS[] = {"def", "for", "while"};
 static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^'};
 static const char SEPORATOR[] = {'(', ')', '[', ']', ','};
 
+static const size_t key_len = sizeof(KEYWORDS)  / sizeof(KEYWORDS[0]);
+static const size_t opt_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
+static const size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
 // returns true if it found a know symbol
 static bool is_keyword(char *buf, i32 offset, i32 len) {
   //TODO ... 
@@ -40,16 +43,13 @@ static bool is_keyword(char *buf, i32 offset, i32 len) {
 }
 
 static bool is_operator(char c) {
-  size_t op_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
-  for (size_t i = 0; i < op_len; i++) {
+  for (size_t i = 0; i < opt_len; i++) {
     if (c == OPERATORS[i]) return true;
   }
   return false;
 }
 
-
 static bool is_seporator(char c) {
-  size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
   for (size_t i = 0; i < sep_len; i++) {
     if (c == SEPORATOR[i]) return true;
   }
@@ -64,6 +64,7 @@ static void append_token(Token *tokens, size_t *count, i32 *offset, i32 *len, To
 }
 
 #define GOTO_NEXT_CHAR(cp) (cp)++; continue;
+
 FileTokens get_tokens(FileBuffer fb) {
   Token *tokens = (Token *)malloc(sizeof(Token) * fb.len);
 
@@ -91,7 +92,7 @@ FileTokens get_tokens(FileBuffer fb) {
         token_offset++;
         GOTO_NEXT_CHAR(cp); 
       } 
-      token_len--; //( ^ will skip next loop)
+      token_len--; // ^ will skip next loop
 
       if (is_keyword(fb.buf, token_offset, token_len)) {
         append_token(tokens, &count, &token_offset, &token_len, KEY);
