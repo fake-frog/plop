@@ -25,8 +25,16 @@ FileBuffer read_file(const char *path) {
   return (FileBuffer){buf, n};
 }
 
+char *KIND_LUT[] = {[SEP] = "SEP", [OPT] = "OPT", [LIT] = "LIT",
+                    [SYM] = "SYM", [KEY] = "KEY", [NIL] = "NIL"};
+
+static const size_t kind_lut_len = sizeof(KIND_LUT) / sizeof(KIND_LUT[0]);
+
 void print_token(Token t, char *buf) {
-  printf("%.*s\n", t.len, buf + t.offset);
+  char *kind_string = "UNKNOWN";
+  if (t.kind > 0 || t.kind < kind_lut_len) kind_string = KIND_LUT[t.kind];
+  printf("%.*s", t.len, buf + t.offset);
+  printf(" -- %s\n", kind_string);
 }
 
 // KNOWN SYMBOLS
@@ -109,7 +117,7 @@ FileTokens get_tokens(FileBuffer fb) {
         token_len = 0;
         GOTO_NEXT_CHAR(cp); 
       }
-      token_len--;
+      token_len--; // dont include the whitespace
 
       if (is_keyword(fb.buf, token_offset, token_len)) {
         append_token_then_offset(tokens, &count, &token_offset, &token_len, KEY);
@@ -124,7 +132,9 @@ FileTokens get_tokens(FileBuffer fb) {
   }
 
   // flush last token
-  append_token_then_offset(tokens, &count, &token_offset, &token_len, KEY);
+  if (token_len > 0) {
+    append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
+  }
   
   return (FileTokens){tokens, count, fb};
 }
