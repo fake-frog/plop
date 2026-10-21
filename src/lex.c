@@ -29,16 +29,20 @@ void print_token(Token t, char *buf) {
   printf("%.*s\n", t.len, buf + t.offset);
 }
 
+// KNOWN SYMBOLS
 static const char *KEYWORDS[] = {"def", "for", "while"};
-static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^'};
-static const char SEPORATOR[] = {'(', ')', '[', ']', ','};
+static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^', '=', '&', '?', '!', '#'};
+static const char SEPORATOR[] = {'(', ')', '[', ']', ',', ';', ':', '{', '}', '"', '\''};
 
 static const size_t key_len = sizeof(KEYWORDS)  / sizeof(KEYWORDS[0]);
 static const size_t opt_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
 static const size_t sep_len = sizeof(SEPORATOR) / sizeof(SEPORATOR[0]);
 // returns true if it found a know symbol
 static bool is_keyword(char *buf, u32 offset, u32 len) {
-  //TODO ... 
+  for (size_t i = 0; i < key_len; i++) {
+    int cmp = strncmp(KEYWORDS[i], buf + offset, len);
+    if (cmp == 0) return true;
+  }
   return false;
 }
 
@@ -56,8 +60,8 @@ static bool is_seporator(char c) {
   return false;
 }
 
-// append and update the offset and len
-static void append_token(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
+// append and update the offset and length
+static void append_token_then_offset(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
   tokens[(*count)++] = (Token){*offset, *len, kind};
   *offset += *len;
   *len = 0;
@@ -67,6 +71,7 @@ static void append_token(Token *tokens, size_t *count, u32 *offset, u32 *len, To
 
 FileTokens get_tokens(FileBuffer fb) {
   Token *tokens = (Token *)malloc(sizeof(Token) * fb.len);
+  if(!tokens) return (FileTokens){0};
 
   char *cp = fb.buf;
   u32 token_len = 0;
@@ -74,37 +79,52 @@ FileTokens get_tokens(FileBuffer fb) {
   size_t count = 0;
   while (*cp) {
     token_len++; // we always have a token length of at least 1
-                 
+
     // look for an operator or seporator
     if (is_operator(*cp)) {
-      append_token(tokens, &count, &token_offset, &token_len, OPT);
+      // append first token at len - 1 then append the operator
+      if (token_len > 1) {
+        token_len--;
+        append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT); // resets token length to 0
+        token_len++;                                                              // set back to 1 (not sure if token_len = 1 is more clear)
+      }
+      append_token_then_offset(tokens, &count, &token_offset, &token_len, OPT);
       GOTO_NEXT_CHAR(cp);
     }
 
     if (is_seporator(*cp)) {
-      append_token(tokens, &count, &token_offset, &token_len, SEP);
+      if (token_len > 1) {
+        token_len--;
+        append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
+        token_len++;
+      }
+      append_token_then_offset(tokens, &count, &token_offset, &token_len, SEP);
       GOTO_NEXT_CHAR(cp);
     }
 
     if (isspace(*cp)) {
-      //skip whitespace
+      // skip whitespace
       if (token_len == 1) { 
         token_offset++;
+        token_len = 0;
         GOTO_NEXT_CHAR(cp); 
-      } 
-      token_len--; // ^ will skip next loop
+      }
+      token_len--;
 
       if (is_keyword(fb.buf, token_offset, token_len)) {
-        append_token(tokens, &count, &token_offset, &token_len, KEY);
-        GOTO_NEXT_CHAR(cp);
+        append_token_then_offset(tokens, &count, &token_offset, &token_len, KEY);
+        continue; // dont go to next char, we will skip the whitespace next time around
       }
       
-      append_token(tokens, &count, &token_offset, &token_len, LIT);
-      GOTO_NEXT_CHAR(cp);
+      append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
+      continue;
     }
-    
+
     GOTO_NEXT_CHAR(cp);
   }
-  // TODO: flush last token
+
+  // flush last token
+  append_token_then_offset(tokens, &count, &token_offset, &token_len, KEY);
+  
   return (FileTokens){tokens, count, fb};
 }

@@ -16,8 +16,13 @@ int main(int argc, char *argv[]) {
     printf("NO FILE PATH GIVEN\n");
     return 1;
   }
-  
+
   FileBuffer file_buffer = read_file(file_path);
+  if (!file_buffer.buf) {
+    printf("No file by that name\n");
+    return 1;
+  }
+  
   FileTokens ft = get_tokens(file_buffer);
 
 
