@@ -25,13 +25,13 @@ FileBuffer read_file(const char *path) {
   return (FileBuffer){buf, n};
 }
 
-char *KIND_LUT[] = {[SEP] = "SEP", [OPT] = "OPT", [LIT] = "LIT",
+const char *KIND_LUT[] = {[SEP] = "SEP", [OPT] = "OPT", [LIT] = "LIT",
                     [SYM] = "SYM", [KEY] = "KEY", [NIL] = "NIL"};
 
 static const size_t kind_lut_len = sizeof(KIND_LUT) / sizeof(KIND_LUT[0]);
 
 void print_token(Token t, char *buf) {
-  char *kind_string = "UNKNOWN";
+  const char *kind_string = "UNKNOWN";
   if (t.kind > 0 || t.kind < kind_lut_len) kind_string = KIND_LUT[t.kind];
   printf("%.*s", t.len, buf + t.offset);
   printf(" -- %s\n", kind_string);
@@ -75,6 +75,12 @@ static void append_token_then_offset(Token *tokens, size_t *count, u32 *offset, 
   *len = 0;
 }
 
+static void append_token_before(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
+  (*len)--;
+  append_token_then_offset(tokens, count, offset, len, kind); // resets token length to 0
+  (*len)++;                                                   // set back to 1 (not sure if len = 1 is more clear)
+}
+
 #define GOTO_NEXT_CHAR(cp) (cp)++; continue;
 
 FileTokens get_tokens(FileBuffer fb) {
@@ -90,11 +96,9 @@ FileTokens get_tokens(FileBuffer fb) {
 
     // look for an operator or seporator
     if (is_operator(*cp)) {
-      // append first token at len - 1 then append the operator
+      // if there is an unappended token before the operator, we have to add it
       if (token_len > 1) {
-        token_len--;
-        append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT); // resets token length to 0
-        token_len++;                                                              // set back to 1 (not sure if token_len = 1 is more clear)
+	append_token_before(tokens, &count, &token_offset, &token_len, LIT);
       }
       append_token_then_offset(tokens, &count, &token_offset, &token_len, OPT);
       GOTO_NEXT_CHAR(cp);
@@ -102,9 +106,7 @@ FileTokens get_tokens(FileBuffer fb) {
 
     if (is_seporator(*cp)) {
       if (token_len > 1) {
-        token_len--;
-        append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
-        token_len++;
+	append_token_before(tokens, &count, &token_offset, &token_len, LIT);
       }
       append_token_then_offset(tokens, &count, &token_offset, &token_len, SEP);
       GOTO_NEXT_CHAR(cp);
