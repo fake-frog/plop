@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 typedef enum {
+  END, // not sure I need this
+  NYD, // Not Yet Definded 
   SEP,
   OPT,
   LIT,
@@ -13,6 +15,13 @@ typedef enum {
   KEY,
   NIL,
 } TokenKind;
+
+typedef enum {
+  PLUS,
+  MINUS,
+  MULT,
+  DIV,
+} OperatorKind;
 
 typedef struct {
   u32 offset;
@@ -31,8 +40,17 @@ typedef struct {
   const FileBuffer file_buf;
 } FileTokens;
 
+typedef struct TNode TNode;
+
+struct TNode {
+  Token value;
+  TNode *next;
+};
+
+
 FileBuffer read_file(const char *path);
 void print_token(Token t, char *buf);
 FileTokens get_tokens(FileBuffer buf);
+TNode sort_tokens(Token *tokens);
 
 #endif

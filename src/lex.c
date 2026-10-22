@@ -25,8 +25,16 @@ FileBuffer read_file(const char *path) {
   return (FileBuffer){buf, n};
 }
 
-const char *KIND_LUT[] = {[SEP] = "SEP", [OPT] = "OPT", [LIT] = "LIT",
-                    [SYM] = "SYM", [KEY] = "KEY", [NIL] = "NIL"};
+static const char *KIND_LUT[] = {
+    [NYD] = "NYD",
+    [SEP] = "SEP",
+    [OPT] = "OPT",
+    [LIT] = "LIT",
+    [SYM] = "SYM",
+    [KEY] = "KEY",
+    [NIL] = "NIL",
+    [END] = "END"
+};
 
 static const size_t kind_lut_len = sizeof(KIND_LUT) / sizeof(KIND_LUT[0]);
 
@@ -98,7 +106,7 @@ FileTokens get_tokens(FileBuffer fb) {
     if (is_operator(*cp)) {
       // if there is an unappended token before the operator, we have to add it
       if (token_len > 1) {
-	append_token_before(tokens, &count, &token_offset, &token_len, LIT);
+        append_token_before(tokens, &count, &token_offset, &token_len, NYD);
       }
       append_token_then_offset(tokens, &count, &token_offset, &token_len, OPT);
       GOTO_NEXT_CHAR(cp);
@@ -106,7 +114,7 @@ FileTokens get_tokens(FileBuffer fb) {
 
     if (is_seporator(*cp)) {
       if (token_len > 1) {
-	append_token_before(tokens, &count, &token_offset, &token_len, LIT);
+        append_token_before(tokens, &count, &token_offset, &token_len, NYD);
       }
       append_token_then_offset(tokens, &count, &token_offset, &token_len, SEP);
       GOTO_NEXT_CHAR(cp);
@@ -126,7 +134,7 @@ FileTokens get_tokens(FileBuffer fb) {
         continue; // dont go to next char, we will skip the whitespace next time around
       }
       
-      append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
+      append_token_then_offset(tokens, &count, &token_offset, &token_len, NYD);
       continue;
     }
 
@@ -135,8 +143,8 @@ FileTokens get_tokens(FileBuffer fb) {
 
   // flush last token
   if (token_len > 0) {
-    append_token_then_offset(tokens, &count, &token_offset, &token_len, LIT);
+    append_token_then_offset(tokens, &count, &token_offset, &token_len, NYD);
   }
-  
+
   return (FileTokens){tokens, count, fb};
 }
