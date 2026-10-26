@@ -7,7 +7,8 @@
 
 
 int main(int argc, char *argv[]) {
-
+  printf("\n---------- BEGIN PROGRAM ----------\n\n");
+  
   char *file_path;
   
   if (argc > 1) {
@@ -24,9 +25,9 @@ int main(int argc, char *argv[]) {
   }
   
   FileTokens ft = get_tokens(file_buffer);
-  assign_token_type(&ft);
+  parse_tokens(&ft);
 
-  printf("\n---------- BEGIN PROGRAM ----------\n\n");
+
   printf("Token Length: %d\n", (int)ft.token_count);
   for (size_t i = 0; i < ft.token_count; i++) {
     print_token(ft.tokens[i], ft.file_buf.buf);

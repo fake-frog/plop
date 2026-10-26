@@ -65,6 +65,6 @@ struct TNode {
 FileBuffer read_file(const char *path);
 void print_token(Token t, char *buf);
 FileTokens get_tokens(FileBuffer buf);
-void assign_token_type(FileTokens *file_tokens);
+void parse_tokens(FileTokens *file_tokens);
 
 #endif

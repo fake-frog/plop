@@ -1,12 +1,11 @@
 #include <ctype.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include "base.h"
 #include "lex.h"
-
+#include "errors.h"
 /* ----------------- [OPEN FILE] ----------------- */
 
 FileBuffer read_file(const char *path) {
@@ -181,7 +180,8 @@ FileTokens get_tokens(FileBuffer fb) {
 }
 
 /* ----------------- [TOKEN PARSE] ----------------- */
-static u8 parse_num(f32 *dest, const char *str_start, const size_t len) {
+
+static bool parse_num(f32 *dest, const char *str_start, const size_t len) {
   // TODO: find a way to use strof with a lenght of the string instead of '\0'
   char num_cpy[len + 1];
   strncpy(num_cpy, str_start, len);
@@ -191,15 +191,19 @@ static u8 parse_num(f32 *dest, const char *str_start, const size_t len) {
   return (end != num_cpy) && (*end == '\0');
 }
 
-void assign_token_type(FileTokens *file_tokens) {
+void parse_tokens(FileTokens *file_tokens) {
   for (size_t i = 0; i < file_tokens->token_count; i++) {
     const char *token_str = file_tokens->file_buf.buf + file_tokens->tokens[i].offset;
     const size_t token_len = file_tokens->tokens[i].len;
     if (isdigit(*token_str)) {
       f32 num = 0;
       if (!parse_num(&num, token_str, token_len)) {
-	// TODO: Should probably impliment better error handling sooner than later
-	printf("error parsing string to number");
+        // TODO: Should probably impliment better error handling sooner than
+        // later
+        fprintf(stderr, "error parsing string to number: ");
+        printf("%.*s \n", (int)token_len, token_str);
+	FileLoc eloc= locateError(file_tokens->tokens[i], file_tokens->file_buf);
+        printf("Line: %d Char %d\n", eloc.line_num, eloc.char_num);
       }
       file_tokens->tokens[i].kind = LIT;
       file_tokens->tokens[i].value.tag = NUM;
