@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   }
   
   FileTokens ft = get_tokens(file_buffer);
-
+  assign_token_type(&ft);
 
   printf("\n---------- BEGIN PROGRAM ----------\n\n");
   printf("Token Length: %d\n", (int)ft.token_count);

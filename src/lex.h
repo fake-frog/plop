@@ -7,26 +7,41 @@
 
 typedef enum {
   END, // not sure I need this
-  NYD, // Not Yet Definded 
+  NYD, // Not Yet Definded
   SEP,
   OPT,
   LIT,
   SYM,
   KEY,
-  NIL,
 } TokenKind;
 
 typedef enum {
-  PLUS,
+  NIL,
+  ADD,
   MINUS,
   MULT,
   DIV,
-} OperatorKind;
+  NUM,
+  STR,
+  CHR,
+  PROC,
+} TokenType;
+
+typedef struct {
+  TokenType tag;
+  union {
+    f32 num_v;
+    u8 char_v;
+    u8 *str_v; // TODO: make a better string type
+    f32 (*num_op)(f32 a, f32 b);
+  } val;
+} TokenValue;
 
 typedef struct {
   u32 offset;
   u32 len;
   TokenKind kind;
+  TokenValue value;
 } Token;
 
 typedef struct {
@@ -47,10 +62,9 @@ struct TNode {
   TNode *next;
 };
 
-
 FileBuffer read_file(const char *path);
 void print_token(Token t, char *buf);
 FileTokens get_tokens(FileBuffer buf);
-TNode sort_tokens(Token *tokens);
+void assign_token_type(FileTokens *file_tokens);
 
 #endif
