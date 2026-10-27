@@ -6,13 +6,15 @@
 #include <stdlib.h>
 
 typedef enum {
-  END, // not sure I need this
   NYD, // Not Yet Definded
   SEP,
   OPT,
   LIT,
   SYM,
   KEY,
+  SPC,
+  NLN, //neline
+  END, // not sure I need this
 } TokenKind;
 
 typedef enum {

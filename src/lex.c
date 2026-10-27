@@ -30,7 +30,8 @@ FileBuffer read_file(const char *path) {
 
 static const char *KIND_LUT[] = {
     [NYD] = "NYD", [SEP] = "SEP", [OPT] = "OPT", [LIT] = "LIT",
-    [SYM] = "SYM", [KEY] = "KEY", [END] = "END"};
+    [SYM] = "SYM", [KEY] = "KEY", [END] = "END", [SPC] = "SPC",
+    [NLN] = "NLN"};
 
 static const size_t kind_lut_len = sizeof(KIND_LUT) / sizeof(KIND_LUT[0]);
 
@@ -66,10 +67,20 @@ f32 divide(f32 a, f32 b) { return a / b; }
 void print_token(Token t, char *buf) {
   const char *kind_string = "UNKNOWN KIND";
   const char *type_string = "UNKNOWN TYPE";
+  
   if (t.kind > 0 || t.kind < kind_lut_len) kind_string = KIND_LUT[t.kind];
   if (t.value.tag > 0 || t.value.tag < type_lut_len) type_string = TYPE_LUT[t.value.tag];
-  printf("%.*s ", t.len, buf + t.offset);
+
+  if (*(buf + t.offset) == '\n') {
+    printf("NEWLINE ");
+  } else if (*(buf + t.offset) == ' '){
+    printf("SPACE ");
+  } else {
+    printf("%.*s ", t.len, buf + t.offset);
+  }
+  
   printf("- KIND: %s ", kind_string);
+  
   switch (t.value.tag) {
   case NUM:
     printf("- TYPE: %s ", type_string);
@@ -135,6 +146,7 @@ FileTokens get_tokens(FileBuffer fb) {
     // look for an operator or seporator
     if (is_operator(*cp)) {
       // if there is an unappended token before the operator, we have to add it
+      
       if (token_len > 1) {
         append_token_before(tokens, &count, &token_offset, &token_len, NYD);
       }
@@ -152,9 +164,15 @@ FileTokens get_tokens(FileBuffer fb) {
 
     if (isspace(*cp)) {
       // skip whitespace
+      // maybe we keep whitespaces? // only one whitespace?
       if (token_len == 1) { 
-        token_offset++;
-        token_len = 0;
+        if(*cp == '\n') {
+          append_token(tokens, &count, &token_offset, &token_len, NLN);
+	  GOTO_NEXT_CHAR(cp); 
+        }
+        // token_offset++;
+        // token_len = 0;
+	append_token(tokens, &count, &token_offset, &token_len, SPC);
         GOTO_NEXT_CHAR(cp); 
       }
       token_len--; // dont include the whitespace
