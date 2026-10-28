@@ -22,3 +22,9 @@ FileLoc locateError(Token t, FileBuffer fb) {
 
   return (FileLoc){line_count, char_count};
 }
+
+void print_located_error(char *msg, FileLoc eloc, const char *file_name, const char *str, const int str_len) {
+  // FIXME: apparently passing escape sequnces into stderr is bad?
+  fprintf(stderr, "\x1b[31m---------\n| ERROR | \x1b[0m%s [%d:%d] '%.*s' -> %s \x1b[31m\n---------\x1b[0m\n", file_name, eloc.line_num, eloc.char_num, str_len, str, msg);
+}
+

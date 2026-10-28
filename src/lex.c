@@ -8,22 +8,37 @@
 #include "errors.h"
 /* ----------------- [OPEN FILE] ----------------- */
 
+static const char *get_file_name(const char *path) {
+  const char *cp = path;
+  u32 offset = 0;
+  u32 count = 0;
+  
+  while (*cp) {
+    if (*cp == '/') offset = count;
+    count++;
+    cp++;
+  }
+
+  return path + offset;
+}
+
 FileBuffer read_file(const char *path) {
   FILE *f = fopen(path, "rb");
-  if (!f) return (FileBuffer){NULL, 0};
+  if (!f) return (FileBuffer){NULL, 0, path};
 
   fseek(f, 0, SEEK_END);
   long len = ftell(f);
   rewind(f);
 
   char *buf = malloc(len + 1);
-  if (!buf) { fclose(f); return (FileBuffer){NULL, 0}; }
+  if (!buf) { fclose(f); return (FileBuffer){NULL, 0, path}; }
   
   size_t n = fread(buf, 1, len, f);
   buf[n] = '\0';
   fclose(f);
 
-  return (FileBuffer){buf, n};
+  const char *name = get_file_name(path);
+  return (FileBuffer){buf, n, name};
 }
 
 /* ----------------- [TOKEN CONSTANTS] ----------------- */
@@ -85,6 +100,10 @@ void print_token(Token t, char *buf) {
   case NUM:
     printf("- TYPE: %s ", type_string);
     printf("- VALUE: %f \n", t.value.val.num_v);
+    break;
+  case STR:
+    printf("- TYPE: %s ", type_string);
+    printf("- VALUE: %.*s \n", t.len, buf + t.offset);
     break;
   default:
     printf("- TYPE: %s\n", type_string);
@@ -163,18 +182,16 @@ FileTokens get_tokens(FileBuffer fb) {
     }
 
     if (isspace(*cp)) {
-      // skip whitespace
-      // maybe we keep whitespaces? // only one whitespace?
+      // keep whitespace
       if (token_len == 1) { 
         if(*cp == '\n') {
           append_token(tokens, &count, &token_offset, &token_len, NLN);
 	  GOTO_NEXT_CHAR(cp); 
         }
-        // token_offset++;
-        // token_len = 0;
 	append_token(tokens, &count, &token_offset, &token_len, SPC);
-        GOTO_NEXT_CHAR(cp); 
+        GOTO_NEXT_CHAR(cp);
       }
+      
       token_len--; // dont include the whitespace
 
       if (is_keyword(fb.buf, token_offset, token_len)) {
@@ -200,7 +217,6 @@ FileTokens get_tokens(FileBuffer fb) {
 /* ----------------- [TOKEN PARSE] ----------------- */
 
 static bool parse_num(f32 *dest, const char *str_start, const size_t len) {
-  // TODO: find a way to use strof with a lenght of the string instead of '\0'
   char num_cpy[len + 1];
   strncpy(num_cpy, str_start, len);
   num_cpy[len] = '\0';
@@ -209,23 +225,64 @@ static bool parse_num(f32 *dest, const char *str_start, const size_t len) {
   return (end != num_cpy) && (*end == '\0');
 }
 
+static bool parse_str_lit(const char *str_start, size_t *str_len) {
+  const char *cp = str_start + *str_len; // str_end
+  while (*cp) {
+    if (*cp == '"') {
+      return true;
+    }
+    (*str_len)++;
+    cp++;
+  }
+  return false;
+}
+
 void parse_tokens(FileTokens *file_tokens) {
+  bool is_string = false;
   for (size_t i = 0; i < file_tokens->token_count; i++) {
+
     const char *token_str = file_tokens->file_buf.buf + file_tokens->tokens[i].offset;
-    const size_t token_len = file_tokens->tokens[i].len;
+    size_t token_len = file_tokens->tokens[i].len;
+
     if (isdigit(*token_str)) {
       f32 num = 0;
       if (!parse_num(&num, token_str, token_len)) {
-        // TODO: Should probably impliment better error handling sooner than
-        // later
-        fprintf(stderr, "error parsing string to number: ");
-        printf("%.*s \n", (int)token_len, token_str);
-	FileLoc eloc= locateError(file_tokens->tokens[i], file_tokens->file_buf);
-        printf("Line: %d Char %d\n", eloc.line_num, eloc.char_num);
+        FileLoc eloc = locateError(file_tokens->tokens[i], file_tokens->file_buf);
+        print_located_error("could not parsing number", eloc, file_tokens->file_buf.name, token_str, token_len);
+        continue;
+        //exit(1);
       }
+      
       file_tokens->tokens[i].kind = LIT;
       file_tokens->tokens[i].value.tag = NUM;
       file_tokens->tokens[i].value.val.num_v = num;
+    }
+
+    if (*token_str == '"') {
+      if (is_string) {
+        is_string = false;
+	continue;
+      }
+      is_string = true;
+      continue;
+
+    }
+
+    if (is_string) {
+      // NOTE: this is strange because the strings length can span multiple tokens.
+      // removing tokens seems unnessasry and expensive?
+      if (!parse_str_lit(token_str, &token_len)) {
+        FileLoc eloc = locateError(file_tokens->tokens[i], file_tokens->file_buf);
+        print_located_error("Unexpected end of file. String not closed.", eloc, file_tokens->file_buf.name, token_str, token_len);
+        is_string = false;
+	continue;
+        //exit(1);
+      }
+      
+      file_tokens->tokens[i].kind = LIT;
+      file_tokens->tokens[i].value.tag = STR;
+      file_tokens->tokens[i].value.val.str_v = NULL; // TODO: not sure the best way to handle this?
+      file_tokens->tokens[i].len = token_len;
     }
   }
 }

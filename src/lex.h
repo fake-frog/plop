@@ -49,6 +49,7 @@ typedef struct {
 typedef struct {
   char *buf;
   size_t len;
+  const char *name;
 } FileBuffer;
 
 typedef struct {

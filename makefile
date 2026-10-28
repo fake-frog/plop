@@ -1,2 +1,2 @@
 target:
-	cc -std=c99 -Wall -Wextra -Wpedantic -o pgrm unity.c
+	clang -std=c99 -Wall -Wextra -Wpedantic -o pgrm unity.c

@@ -9,5 +9,6 @@ typedef struct {
 } FileLoc;
 
 FileLoc locateError(Token t, FileBuffer fb);
-
+void print_located_error(char *msg, FileLoc eloc, const char *file_name,
+                         const char *str, const int str_len);
 #endif
