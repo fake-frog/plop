@@ -244,7 +244,7 @@ void parse_tokens(FileTokens *file_tokens) {
     const char *token_str = file_tokens->file_buf.buf + file_tokens->tokens[i].offset;
     size_t token_len = file_tokens->tokens[i].len;
 
-    if (isdigit(*token_str)) {
+    if (isdigit(*token_str) && !is_string) {
       f32 num = 0;
       if (!parse_num(&num, token_str, token_len)) {
         FileLoc eloc = locateError(file_tokens->tokens[i], file_tokens->file_buf);
@@ -273,7 +273,7 @@ void parse_tokens(FileTokens *file_tokens) {
       // removing tokens seems unnessasry and expensive?
       if (!parse_str_lit(token_str, &token_len)) {
         FileLoc eloc = locateError(file_tokens->tokens[i], file_tokens->file_buf);
-        print_located_error("Unexpected end of file. String not closed.", eloc, file_tokens->file_buf.name, token_str, token_len);
+        print_located_error("String not closed.", eloc, file_tokens->file_buf.name, token_str, 1);
         is_string = false;
 	continue;
         //exit(1);

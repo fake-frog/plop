@@ -29,8 +29,10 @@ int main(int argc, char *argv[]) {
 
 
   printf("Token Length: %d\n", (int)ft.token_count);
+  /*
   for (size_t i = 0; i < ft.token_count; i++) {
     print_token(ft.tokens[i], ft.file_buf.buf);
   }
+  */
   printf("\n----------- END PROGRAM -----------\n\n");
 }
