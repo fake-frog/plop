@@ -6,6 +6,7 @@
 #include "base.h"
 #include "lex.h"
 #include "errors.h"
+
 /* ----------------- [OPEN FILE] ----------------- */
 
 static const char *get_file_name(const char *path) {
