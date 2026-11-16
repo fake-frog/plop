@@ -238,7 +238,7 @@ FileTokens get_tokens(FileBuffer fb) {
       append_token(tokens, &count, &token_offset, &token_len, NYD);
       continue;
 
-      /* --------- BEGIN CASE SPACE --------- */
+      /* --------- END CASE SPACE --------- */
       
     }
 
