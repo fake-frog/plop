@@ -6,12 +6,12 @@
 #include "base.h"
 #include "errors.h"
 
-FileLoc locateError(Token t, FileBuffer fb) {
+FileLoc locate_error(u32 offset, FileBuffer fb) {
   char *cp = fb.buf;
   u32 line_count = 1;
   u32 char_count = 0;
   
-  for(size_t i = 0; i < t.offset; i++) {
+  for(size_t i = 0; i < offset; i++) {
     if (*cp == '\n') {
       line_count++;
       char_count = 0;
@@ -22,6 +22,7 @@ FileLoc locateError(Token t, FileBuffer fb) {
 
   return (FileLoc){line_count, char_count};
 }
+
 
 void print_located_error(char *msg, FileLoc eloc, const char *file_name, const char *str, const int str_len) {
   // FIXME: apparently passing escape sequnces into stderr is bad?

@@ -13,7 +13,7 @@ typedef enum {
   SYM,
   KEY,
   SPC,
-  NLN, //neline
+  NLN, // newline
   END, // not sure I need this
 } TokenKind;
 

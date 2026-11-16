@@ -66,7 +66,7 @@ static const size_t type_lut_len = sizeof(TYPE_LUT) / sizeof(TYPE_LUT[0]);
 
 // KNOWN SYMBOLS
 static const char *KEYWORDS[] = {"def", "for", "while"};
-static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^', '=', '&', '?', '!', '#'};
+static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^', '=', '&', '?', '!', '#', '<', '>'};
 static const char SEPORATOR[] = {'(', ')', '[', ']', ',', ';', ':', '{', '}', '"', '\''};
 
 static const size_t key_len = sizeof(KEYWORDS)  / sizeof(KEYWORDS[0]);
@@ -150,6 +150,18 @@ static void append_token_before(Token *tokens, size_t *count, u32 *offset, u32 *
   (*len)++;                                       // set back to 1 (not sure if len = 1 is more clear)
 }
 
+static void append_string_token(Token *tokens, size_t *count, u32 *offset, u32 *len, char **cp) {
+  while (*(++(*cp))) {
+    (*len)++;
+    if (**cp == '"') {
+      append_token(tokens, count, offset, len, LIT);
+      return;
+    };
+  }
+
+  printf("[ERROR] unclosed string");
+}
+
 #define GOTO_NEXT_CHAR(cp) (cp)++; continue;
 
 FileTokens get_tokens(FileBuffer fb) {
@@ -160,36 +172,59 @@ FileTokens get_tokens(FileBuffer fb) {
   u32 token_len = 0;
   u32 token_offset = 0;
   size_t count = 0;
+  
   while (*cp) {
-    token_len++; // we always have a token length of at least 1
 
-    // look for an operator or seporator
+    token_len++; 
+
     if (is_operator(*cp)) {
-      // if there is an unappended token before the operator, we have to add it
+      
+      /* --------- BEGIN CASE OPERATOR --------- */
       
       if (token_len > 1) {
         append_token_before(tokens, &count, &token_offset, &token_len, NYD);
       }
+      
       append_token(tokens, &count, &token_offset, &token_len, OPT);
       GOTO_NEXT_CHAR(cp);
+
+      /* --------- END CASE OPERATOR --------- */
+      
     }
 
+
     if (is_seporator(*cp)) {
+
+      /* --------- BEGIN CASE SEPORATOR --------- */
+      
       if (token_len > 1) {
         append_token_before(tokens, &count, &token_offset, &token_len, NYD);
       }
-      append_token(tokens, &count, &token_offset, &token_len, SEP);
+      
+      if (*cp == '"') {
+        append_string_token(tokens, &count, &token_offset, &token_len, &cp);
+      }
+      
       GOTO_NEXT_CHAR(cp);
+
+      /* --------- END CASE SEPORATOR --------- */
+      
     }
 
     if (isspace(*cp)) {
-      // keep whitespace
-      if (token_len == 1) { 
+
+      /* --------- BEGIN CASE SPACE --------- */
+
+      if (token_len == 1) {
+	
         if(*cp == '\n') {
           append_token(tokens, &count, &token_offset, &token_len, NLN);
-	  GOTO_NEXT_CHAR(cp); 
+	  GOTO_NEXT_CHAR(cp);
         }
-	append_token(tokens, &count, &token_offset, &token_len, SPC);
+	
+	// skip
+        token_offset++;
+	token_len = 0;
         GOTO_NEXT_CHAR(cp);
       }
       
@@ -202,6 +237,9 @@ FileTokens get_tokens(FileBuffer fb) {
       
       append_token(tokens, &count, &token_offset, &token_len, NYD);
       continue;
+
+      /* --------- BEGIN CASE SPACE --------- */
+      
     }
 
     GOTO_NEXT_CHAR(cp);
@@ -216,7 +254,7 @@ FileTokens get_tokens(FileBuffer fb) {
 }
 
 /* ----------------- [TOKEN PARSE] ----------------- */
-
+/*
 static bool parse_num(f32 *dest, const char *str_start, const size_t len) {
   char num_cpy[len + 1];
   strncpy(num_cpy, str_start, len);
@@ -287,3 +325,4 @@ void parse_tokens(FileTokens *file_tokens) {
     }
   }
 }
+*/
