@@ -67,7 +67,7 @@ static const size_t type_lut_len = sizeof(TYPE_LUT) / sizeof(TYPE_LUT[0]);
 // KNOWN SYMBOLS
 static const char *KEYWORDS[] = {"def", "for", "while"};
 static const char OPERATORS[] = {'+', '-', '*', '/', '%', '^', '=', '&', '?', '!', '#', '<', '>'};
-static const char SEPORATOR[] = {'(', ')', '[', ']', ',', ';', ':', '{', '}', '"', '\''};
+static const char SEPORATOR[] = {'(', ')', '[', ']', ',', ';', ':', '{', '}'};
 
 static const size_t key_len = sizeof(KEYWORDS)  / sizeof(KEYWORDS[0]);
 static const size_t opt_len = sizeof(OPERATORS) / sizeof(OPERATORS[0]);
@@ -138,15 +138,15 @@ static bool is_seporator(char c) {
 
 /* --- get_token helpers --- */
 
-static void append_token(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
-  tokens[(*count)++] = (Token){*offset, *len, kind, {0}};
+static void append_token(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind, TokenType type) {
+  tokens[(*count)++] = (Token){*offset, *len, kind, {type, {0}}};
   *offset += *len;
   *len = 0;
 }
 
-static void append_token_before(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind) {
+static void append_token_before(Token *tokens, size_t *count, u32 *offset, u32 *len, TokenKind kind, TokenType type) {
   (*len)--;
-  append_token(tokens, count, offset, len, kind); // resets token length to 0
+  append_token(tokens, count, offset, len, kind, type); // resets token length to 0
   (*len)++;                                       // set back to 1 (not sure if len = 1 is more clear)
 }
 
@@ -154,13 +154,30 @@ static void append_string_token(Token *tokens, size_t *count, u32 *offset, u32 *
   while (*(++(*cp))) {
     (*len)++;
     if (**cp == '"') {
-      append_token(tokens, count, offset, len, LIT);
+      append_token(tokens, count, offset, len, LIT, STR);
       return;
     };
   }
 
-  printf("[ERROR] unclosed string");
+  printf("[ERROR] unclosed string"); // TODO 
 }
+
+static void append_num_token(Token *tokens, size_t *count, u32 *offset, u32 *len, char **cp) {
+  while (*(++(*cp))) {
+    (*len)++;
+    if (isspace(**cp) || is_operator(**cp) || is_seporator(**cp)) {
+      append_token_before(tokens, count, offset, len, LIT, NUM);
+      return;
+    }
+
+    if (!(isdigit(**cp) || (**cp == '.'))) {
+      printf("[ERROR] not a number"); // TODO
+      return;
+    }
+  }
+  // if its the last token 
+  append_token(tokens, count, offset, len, LIT, NUM);
+} 
 
 #define GOTO_NEXT_CHAR(cp) (cp)++; continue;
 
@@ -174,37 +191,44 @@ FileTokens get_tokens(FileBuffer fb) {
   size_t count = 0;
   
   while (*cp) {
+    token_len++;
 
-    token_len++; 
+    /* --------- BEGIN CASE LITERAL --------- */
 
+    if (*cp == '"') {
+      append_string_token(tokens, &count, &token_offset, &token_len, &cp);
+      GOTO_NEXT_CHAR(cp);
+    }
+
+    if (isdigit(*cp)) {
+      append_num_token(tokens, &count, &token_offset, &token_len, &cp);
+    }
+
+    /* --------- END CASE LITERAL --------- */
+    
     if (is_operator(*cp)) {
       
       /* --------- BEGIN CASE OPERATOR --------- */
       
       if (token_len > 1) {
-        append_token_before(tokens, &count, &token_offset, &token_len, NYD);
+        append_token_before(tokens, &count, &token_offset, &token_len, NYD, UNKNOWN);
       }
       
-      append_token(tokens, &count, &token_offset, &token_len, OPT);
+      append_token(tokens, &count, &token_offset, &token_len, OPT, UNKNOWN);
       GOTO_NEXT_CHAR(cp);
 
       /* --------- END CASE OPERATOR --------- */
       
     }
 
-
     if (is_seporator(*cp)) {
 
       /* --------- BEGIN CASE SEPORATOR --------- */
-      
       if (token_len > 1) {
-        append_token_before(tokens, &count, &token_offset, &token_len, NYD);
+        append_token_before(tokens, &count, &token_offset, &token_len, NYD, UNKNOWN);
       }
       
-      if (*cp == '"') {
-        append_string_token(tokens, &count, &token_offset, &token_len, &cp);
-      }
-      
+      append_token(tokens, &count, &token_offset, &token_len, SEP, NIL);
       GOTO_NEXT_CHAR(cp);
 
       /* --------- END CASE SEPORATOR --------- */
@@ -218,7 +242,7 @@ FileTokens get_tokens(FileBuffer fb) {
       if (token_len == 1) {
 	
         if(*cp == '\n') {
-          append_token(tokens, &count, &token_offset, &token_len, NLN);
+          append_token(tokens, &count, &token_offset, &token_len, NLN, NIL);
 	  GOTO_NEXT_CHAR(cp);
         }
 	
@@ -231,11 +255,11 @@ FileTokens get_tokens(FileBuffer fb) {
       token_len--; // dont include the whitespace
 
       if (is_keyword(fb.buf, token_offset, token_len)) {
-        append_token(tokens, &count, &token_offset, &token_len, KEY);
+        append_token(tokens, &count, &token_offset, &token_len, KEY, BUILTIN);
         continue; // dont go to next char, we will skip the whitespace next time around
       }
       
-      append_token(tokens, &count, &token_offset, &token_len, NYD);
+      append_token(tokens, &count, &token_offset, &token_len, NYD, UNKNOWN);
       continue;
 
       /* --------- END CASE SPACE --------- */
@@ -247,7 +271,7 @@ FileTokens get_tokens(FileBuffer fb) {
 
   // flush last token
   if (token_len > 0) {
-    append_token(tokens, &count, &token_offset, &token_len, NYD);
+    append_token(tokens, &count, &token_offset, &token_len, NYD, UNKNOWN);
   }
 
   return (FileTokens){tokens, count, fb};

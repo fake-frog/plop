@@ -17,6 +17,7 @@ typedef enum {
   END, // not sure I need this
 } TokenKind;
 
+// TODO these types need more thought 
 typedef enum {
   NIL,
   ADD,
@@ -27,6 +28,8 @@ typedef enum {
   STR,
   CHR,
   PROC,
+  BUILTIN,
+  UNKNOWN, // Not Yet Definded
 } TokenType;
 
 typedef struct {
